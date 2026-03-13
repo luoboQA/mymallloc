@@ -23,10 +23,10 @@ typedef struct block_meta {
 } block_meta_t;
 
 #define META_SIZE sizeof(block_meta_t)
-#define MAGIC_FREE 0x55555555
-#define MAGIC_ALLOC 0x77777777
-#define MAGIC_NEW 0x12345678
-#define ALIGNMENT 8  /* 8-byte alignment for 64-bit systems */
+#define MAGIC_FREE 0x55555555 // 空闲块标记
+#define MAGIC_ALLOC 0x77777777  // 已分配块标记  
+#define MAGIC_NEW 0x12345678 // 新分配块的标记
+#define ALIGNMENT 8  /* 8-byte alignment for 64-bit systems 地址对齐*/
 
 /* Head of the free list */
 void *global_base = NULL;
@@ -48,8 +48,10 @@ block_meta_t *get_block_ptr(void *ptr) {
 /**
  * Find a free block that can fit the requested size
  * Uses first-fit algorithm
+ * block_meta_t **last - 双重指针，记录最后一个检查的块，以便在需要请求新内存时链接新块
  */
 block_meta_t *find_free_block(block_meta_t **last, size_t size) {
+     // 1. 从头开始遍历链表，寻找第一个满足条件的空闲块（free=1且size>=请求的size）
     block_meta_t *current = global_base;
     while (current && !(current->free && current->size >= size)) {
         *last = current;
@@ -59,12 +61,11 @@ block_meta_t *find_free_block(block_meta_t **last, size_t size) {
 }
 
 /**
- * Request more memory from OS using sbrk
+ * Request more memory from OS using sbrk,no free block
  */
 block_meta_t *request_space(block_meta_t* last, size_t size) {
     block_meta_t *block;
-    
-    /* Get current program break */
+    //获取当前堆顶位置
     block = sbrk(0);
     
     /* Request more memory (header + requested size) */
